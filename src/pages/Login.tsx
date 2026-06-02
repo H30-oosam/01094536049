@@ -15,8 +15,8 @@ import { motion } from 'motion/react';
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('hossam@admin.com');
-  const [password, setPassword] = useState('1321994');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -380,14 +380,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Quick Demo Credentials Info Bar */}
-          <div className="mt-8 p-3 bg-amber-50 border-2 border-amber-200 text-[#002D62] text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-[2px_2px_0px_0px_#d97706]">
-            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <p className="font-extrabold uppercase">Demo Credentials:</p>
-              <p className="opacity-85">Email: <span className="underline select-all">hossam@admin.com</span> / Password: <span className="underline select-all">1321994</span></p>
-            </div>
-          </div>
+
 
           <div className="mt-10 text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#002D62]/55">
