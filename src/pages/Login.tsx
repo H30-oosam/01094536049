@@ -7,7 +7,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Mail, Lock, UserPlus, LogIn, Github, Globe, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
@@ -65,11 +65,91 @@ const Login = () => {
     }
   };
 
+  const handleQuickAdminLogin = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const emailVal = 'hossam@admin.com';
+      const passwordVal = '1321994';
+      
+      let resultUser: any = null;
+      try {
+        const authResult = await signInWithEmailAndPassword(auth, emailVal, passwordVal);
+        resultUser = authResult.user;
+      } catch (loginErr: any) {
+        if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential' || loginErr.code === 'auth/wrong-password') {
+          try {
+            const createResult = await createUserWithEmailAndPassword(auth, emailVal, passwordVal);
+            resultUser = createResult.user;
+          } catch (createErr: any) {
+            console.warn("Using sandbox fallback session:", createErr);
+          }
+        }
+      }
+
+      const demoUser = {
+        uid: resultUser ? resultUser.uid : 'demo-hossam-admin',
+        email: emailVal,
+        displayName: 'Hossam Elwardany',
+        role: 'super-admin' as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (resultUser) {
+        try {
+          await setDoc(doc(db, 'users', resultUser.uid), demoUser);
+        } catch (fsErr) {
+          console.warn("Could not save profile directly:", fsErr);
+        }
+      }
+
+      localStorage.setItem('demoUser', JSON.stringify(demoUser));
+      setUser(demoUser);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Quick login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
       setError('');
+
+      // Check if user has a custom account created by the admin in Firestore first
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('email', '==', email));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) {
+          const matchedDoc = qSnap.docs[0];
+          const matchedData = matchedDoc.data();
+          if (matchedData && matchedData.password === password) {
+            const customUserId = matchedData.uid || matchedDoc.id || `demo-emp-${matchedDoc.id}`;
+            const demoUser = {
+              uid: customUserId.startsWith('demo-') ? customUserId : `demo-${customUserId}`,
+              email: matchedData.email,
+              displayName: matchedData.displayName || email.split('@')[0],
+              role: matchedData.role || 'employee',
+              permissions: matchedData.permissions,
+              createdAt: matchedData.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem('demoUser', JSON.stringify(demoUser));
+            setUser(demoUser);
+            navigate('/');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Custom user check failed, falling back to standard auth:", err);
+      }
       
       const bootstrapEmails = ['hossam@admin.com', 'hossamelwardany132@gmail.com'];
       const bootstrapPassword = '1321994'; // Demo password for bootstrap accounts
@@ -377,6 +457,16 @@ const Login = () => {
                 ? (isRTL ? 'جاري التحقق...' : 'VERIFYING...') 
                 : (isSignUp ? (isRTL ? 'إنشاء حساب' : 'REGISTER NOW') : (isRTL ? 'تسجيل الدخول الموحد' : 'AUTHORIZE & LOG IN'))
               }
+            </button>
+
+            <button
+              type="button"
+              onClick={handleQuickAdminLogin}
+              disabled={loading}
+              className="w-full mt-3 py-3 border-2 border-dashed border-[#002D62] text-[#002D62] font-black rounded-xl hover:bg-[#002D62]/5 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest cursor-pointer active:translate-y-0.5"
+            >
+              <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
+              <span>{isRTL ? 'تسجيل الدخول السريع (مسؤول)' : 'QUICK ADMIN LOG IN'}</span>
             </button>
           </form>
 

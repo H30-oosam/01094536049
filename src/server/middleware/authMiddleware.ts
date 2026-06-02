@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { adminAuth } from "../firebaseAdmin";
+import { adminAuth, adminDb } from "../firebaseAdmin";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -36,23 +36,80 @@ export const authenticate = async (
   }
 };
 
-export const requireRole = (role: string) => {
+export const requireRole = (allowedRoles: string[]) => {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    // We would typically fetch user data from DB to confirm role
-    // or use custom claims in Firebase Auth tokens.
-    // For this professional setup, we'll assume role is verified via DB lookup
     if (!req.user) {
-      res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "Unauthorized: Authentication required" });
       return;
     }
 
     try {
-      const userDoc = await adminAuth.getUser(req.user.uid);
-      // In a real app, you might check custom claims or search Firestore
-      // For now we assume verifyIdToken passed and user exists
-      next();
+      // Fetch the actual role directly from Firestore Database
+      const userDoc = await adminDb.collection("users").doc(req.user.uid).get();
+      if (!userDoc.exists) {
+        res.status(403).json({ error: "Access Denied: User account is not registered in Firestore" });
+        return;
+      }
+
+      const userData = userDoc.data();
+      const userRole = userData?.role || "employee";
+
+      // Super admins bypass all roles
+      if (userRole === "super-admin") {
+        next();
+        return;
+      }
+
+      if (allowedRoles.includes(userRole)) {
+        next();
+        return;
+      }
+
+      res.status(403).json({ 
+        error: `Access Denied: Insufficient permissions. Required roles: ${allowedRoles.join(", ")}, current role: ${userRole}` 
+      });
     } catch (err) {
-       res.status(403).json({ error: "Forbidden" });
+      console.error("RBAC Middleware Error:", err);
+       res.status(500).json({ error: "Authorization Service Failure" });
+    }
+  };
+};
+
+export const requirePermission = (permissionKey: string) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized: Authentication required" });
+      return;
+    }
+
+    try {
+      const userDoc = await adminDb.collection("users").doc(req.user.uid).get();
+      if (!userDoc.exists) {
+        res.status(403).json({ error: "Access Denied: User Profile not configured" });
+        return;
+      }
+
+      const userData = userDoc.data();
+      const userRole = userData?.role || "employee";
+
+      // Super admins and Admins are granted full system-wide permissions
+      if (userRole === "super-admin" || userRole === "admin") {
+        next();
+        return;
+      }
+
+      const permissions = userData?.permissions || {};
+      if (permissions[permissionKey] === true) {
+        next();
+        return;
+      }
+
+      res.status(403).json({
+        error: `Access Denied: Missing authorization privilege for context: '${permissionKey}'`
+      });
+    } catch (err) {
+      console.error("Granular Permission Middleware Error:", err);
+      res.status(500).json({ error: "Permission Authorization Service Failure" });
     }
   };
 };

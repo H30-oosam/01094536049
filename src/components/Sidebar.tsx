@@ -45,49 +45,72 @@ const Sidebar = () => {
     {
       title: isRTL ? 'الرئيسية' : 'Main',
       items: [
-        { name: isRTL ? 'لوحة القيادة' : 'Dashboard', icon: LayoutDashboard, path: '/' },
+        { name: isRTL ? 'لوحة القيادة' : 'Dashboard', icon: LayoutDashboard, path: '/', permKey: 'dashboard' },
       ]
     },
     {
       title: isRTL ? 'إدارة الموظفين' : 'Employee Management',
       items: [
-        { name: isRTL ? 'الموظفون' : 'Employees', icon: Users, path: '/employees' },
-        { name: isRTL ? 'الهيكل التنظيمي' : 'Org Chart', icon: Users, path: '/org-chart' },
-        { name: isRTL ? 'المهام' : 'Tasks', icon: CheckSquare, path: '/tasks' },
+        { name: isRTL ? 'الموظفون' : 'Employees', icon: Users, path: '/employees', permKey: 'employees' },
+        { name: isRTL ? 'الهيكل التنظيمي' : 'Org Chart', icon: Users, path: '/org-chart', permKey: 'employees' },
+        { name: isRTL ? 'المهام' : 'Tasks', icon: CheckSquare, path: '/tasks', permKey: 'tasks' },
       ]
     },
     {
       title: isRTL ? 'التوظيف' : 'Recruitment',
       items: [
-        { name: isRTL ? 'المرشحون' : 'Candidates', icon: UserPlus, path: '/candidates', badge: 630 },
-        { name: isRTL ? 'تهيئة الموظفين الجدد' : 'Onboarding', icon: Rocket, path: '/onboarding' },
-        { name: isRTL ? 'تجربة الموظف' : 'Employee CRM', icon: Heart, path: '/crm' },
+        { name: isRTL ? 'المرشحون' : 'Candidates', icon: UserPlus, path: '/candidates', badge: 630, permKey: 'recruitment' },
+        { name: isRTL ? 'تهيئة الموظفين الجدد' : 'Onboarding', icon: Rocket, path: '/onboarding', permKey: 'recruitment' },
+        { name: isRTL ? 'تجربة الموظف' : 'Employee CRM', icon: Heart, path: '/crm', permKey: 'recruitment' },
       ]
     },
     {
       title: isRTL ? 'الأداء والتطوير' : 'Performance & Payroll',
       items: [
-        { name: isRTL ? 'الأداء والتقييم' : 'Performance', icon: TrendingUp, path: '/performance' },
-        { name: isRTL ? 'التدريب والتطوير' : 'Training', icon: GraduationCap, path: '/training' },
-        { name: isRTL ? 'الرواتب والمسيرات' : 'Payroll', icon: Wallet, path: '/payroll' },
-        { name: isRTL ? 'الحضور والانصراف' : 'Attendance', icon: Clock, path: '/attendance' },
-        { name: isRTL ? 'الإجازات والطلبات' : 'Leaves', icon: Calendar, path: '/leaves' },
+        { name: isRTL ? 'الأداء والتقييم' : 'Performance', icon: TrendingUp, path: '/performance', permKey: 'performancePay' },
+        { name: isRTL ? 'التدريب والتطوير' : 'Training', icon: GraduationCap, path: '/training', permKey: 'performancePay' },
+        { name: isRTL ? 'الرواتب والمسيرات' : 'Payroll', icon: Wallet, path: '/payroll', permKey: 'performancePay' },
+        { name: isRTL ? 'الحضور والانصراف' : 'Attendance', icon: Clock, path: '/attendance', permKey: 'performancePay' },
+        { name: isRTL ? 'الإجازات والطلبات' : 'Leaves', icon: Calendar, path: '/leaves', permKey: 'performancePay' },
       ]
     },
     {
       title: isRTL ? 'النظام' : 'System Settings',
       items: [
-        { name: isRTL ? 'الإعلانات' : 'News & Broadcast', icon: Megaphone, path: '/announcements' },
-        { name: isRTL ? 'جهاز العقود والتعاميم' : 'Documents Builder', icon: ScrollText, path: '/documents' },
-        { name: isRTL ? 'الملفات والمستندات' : 'Files', icon: FileText, path: '/files' },
-        { name: isRTL ? 'الأصول والموارد' : 'Assets Management', icon: Box, path: '/assets' },
-        { name: isRTL ? 'سجل العمليات والتدقيق' : 'Audit Logs', icon: History, path: '/logs' },
-        { name: isRTL ? 'الصلاحيات والمستخدمين' : 'Permissions', icon: Shield, path: '/users' },
-        { name: isRTL ? 'ربط واتساب ويب' : 'WhatsApp Web Connect', icon: MessageSquare, path: '/whatsapp' },
-        { name: isRTL ? 'إعدادات النظام والصفحات' : 'Settings', icon: Settings, path: '/settings' },
+        { name: isRTL ? 'الإعلانات' : 'News & Broadcast', icon: Megaphone, path: '/announcements', permKey: 'system' },
+        { name: isRTL ? 'جهاز العقود والتعاميم' : 'Documents Builder', icon: ScrollText, path: '/documents', permKey: 'system' },
+        { name: isRTL ? 'الملفات والمستندات' : 'Files', icon: FileText, path: '/files', permKey: 'system' },
+        { name: isRTL ? 'الأصول والموارد' : 'Assets Management', icon: Box, path: '/assets', permKey: 'system' },
+        { name: isRTL ? 'سجل العمليات والتدقيق' : 'Audit Logs', icon: History, path: '/logs', permKey: 'system' },
+        { name: isRTL ? 'الصلاحيات والمستخدمين' : 'Permissions', icon: Shield, path: '/users', permKey: 'permissions' },
+        { name: isRTL ? 'ربط واتساب ويب' : 'WhatsApp Web Connect', icon: MessageSquare, path: '/whatsapp', permKey: 'system' },
+        { name: isRTL ? 'إعدادات النظام والصفحات' : 'Settings', icon: Settings, path: '/settings', permKey: 'system' },
       ]
     }
   ];
+
+  const isPowerUser = user?.role === 'super-admin' || user?.role === 'admin';
+
+  const filteredCategories = categories.map(cat => {
+    const filteredItems = cat.items.filter(item => {
+      if (isPowerUser) return true;
+      
+      const userPerms = (user as any)?.permissions;
+      if (userPerms && item.permKey) {
+        return userPerms[item.permKey] === true;
+      }
+      
+      if (user?.role === 'manager') {
+        return item.permKey !== 'permissions';
+      }
+      if (user?.role === 'employee') {
+        return item.permKey === 'dashboard' || item.permKey === 'tasks';
+      }
+      
+      return false;
+    });
+    return { ...cat, items: filteredItems };
+  }).filter(cat => cat.items.length > 0);
 
   return (
     <>
@@ -105,7 +128,7 @@ const Sidebar = () => {
         
         {/* Flat Premium Branding Area with custom icon nodes & user-defined name text */}
         <div className="p-6 border-b border-white/8 mb-2">
-          <div className="flex items-center justify-between gap-3 flex-row-reverse">
+          <div className="flex items-center justify-between gap-3 flex-row-reverse" id="branding-area">
             <div className="w-10 h-10 bg-[#135bf6] rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/10 shrink-0">
               <Users className="w-5 h-5 stroke-[2.5]" />
             </div>
@@ -128,7 +151,7 @@ const Sidebar = () => {
 
         {/* Categorized and polished Navigation with hover states */}
         <nav className="flex-1 px-4 py-3 space-y-5 overflow-y-auto custom-scrollbar">
-          {categories.map((cat, index) => (
+          {filteredCategories.map((cat, index) => (
             <div key={index} className="space-y-1">
               <p className="px-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">
                 {cat.title}

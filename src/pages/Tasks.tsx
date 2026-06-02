@@ -5,7 +5,7 @@ import {
   Trash2, User, AlertCircle, Edit3
 } from 'lucide-react';
 import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useUIStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { logActivity, ActivityType } from '../services/activityService';
@@ -15,6 +15,7 @@ const Tasks = () => {
   const { isRTL } = useUIStore();
   const { user } = useAuthStore();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -58,9 +59,31 @@ const Tasks = () => {
       console.error('Tasks fetch failed, using local fallback:', error);
       setTasks(stored ?? []);
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'tasks');
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const qEmp = query(collection(db, 'employees'));
+    const unsubscribeEmp = onSnapshot(qEmp, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const sorted = [...docs].sort((a: any, b: any) => {
+        const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+        const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+        return nameA.localeCompare(nameB, isRTL ? 'ar' : 'en');
+      });
+      setEmployees(sorted);
+    }, (error) => {
+      console.error('Employees load failed in Tasks page, using local:', error);
+      try {
+        const localEmps = localStorage.getItem('demoEmployees');
+        if (localEmps) setEmployees(JSON.parse(localEmps));
+      } catch {}
+      handleFirestoreError(error, OperationType.GET, 'employees');
+    });
+    return () => unsubscribeEmp();
+  }, [isRTL]);
 
   const openTaskModal = (task: any | null = null) => {
     if (task) {
@@ -307,14 +330,14 @@ const Tasks = () => {
                         }`}>
                           {task.title}
                         </h4>
-                        <div className="flex items-center gap-3 mt-1">
-                          <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-tighter ${
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-tighter shrink-0 ${
                             isOverdue ? 'text-rose-500 font-black' : 'text-slate-400'
                           }`}>
                             {isOverdue ? <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500 animate-pulse" /> : <Clock className="w-3" />}
                             {task.dueDate} {isOverdue && (isRTL ? '(متأخرة!)' : '(OVERDUE!)')}
                           </div>
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shrink-0 ${
                             task.status === 'done' 
                               ? 'bg-slate-100 text-slate-400' 
                               : task.priority === 'high' 
@@ -323,6 +346,11 @@ const Tasks = () => {
                           }`}>
                             {task.priority}
                           </span>
+                          {task.assignedTo && (
+                            <span className="px-2 py-0.5 rounded text-[9px] bg-slate-100 text-slate-650 font-bold border border-slate-200/50 shrink-0 flex items-center gap-1 shadow-sm">
+                              👤 {task.assignedTo}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -409,17 +437,22 @@ const Tasks = () => {
                       value={formData.dueDate}
                       onChange={e => setFormData({...formData, dueDate: e.target.value})}
                     />
-                    <input
-                      type="text"
-                      placeholder={isRTL ? 'مخصص لـ' : 'Assigned To'}
+                    <select
                       value={formData.assignedTo}
                       onChange={e => setFormData({...formData, assignedTo: e.target.value})}
                       className={`px-4 py-3 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-2 transition-all ${
                         isPast 
-                          ? 'border-rose-300 focus:ring-rose-500/20 text-rose-800 placeholder:text-rose-400' 
+                          ? 'border-rose-300 focus:ring-rose-500/20 text-rose-800' 
                           : 'border-slate-200 focus:ring-indigo-500/20 text-slate-900'
                       }`}
-                    />
+                    >
+                      <option value="">{isRTL ? '-- اختر موظف --' : '-- Assign Employee --'}</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.name || emp.displayName}>
+                          {emp.name || emp.displayName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">

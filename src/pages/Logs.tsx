@@ -72,6 +72,27 @@ const Logs = () => {
     return () => unsubscribe();
   }, []);
 
+  const formatLogTime = (ts: any) => {
+    if (!ts) return '...';
+    try {
+      if (typeof ts.toDate === 'function') {
+        const d = ts.toDate();
+        return format(d, isRTL ? 'dd/MM/yyyy - hh:mm a' : 'PPpp');
+      }
+      if (typeof ts === 'object' && ts.seconds) {
+        const d = new Date(ts.seconds * 1000);
+        return format(d, isRTL ? 'dd/MM/yyyy - hh:mm a' : 'PPpp');
+      }
+      const d = new Date(ts);
+      if (!isNaN(d.getTime())) {
+        return format(d, isRTL ? 'dd/MM/yyyy - hh:mm a' : 'PPpp');
+      }
+    } catch (err) {
+      console.error("Error formatting timestamp:", err);
+    }
+    return '...';
+  };
+
   const getTypeIcon = (type: ActivityType) => {
     switch (type) {
       case ActivityType.CREATE: return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
@@ -157,7 +178,7 @@ const Logs = () => {
                       <div className="flex items-center gap-2 text-slate-400">
                         <Clock className="w-3.5 h-3.5" />
                         <span className="text-[10px] font-black uppercase">
-                          {log.timestamp ? format(log.timestamp.toDate(), 'PPpp') : '...'}
+                          {formatLogTime(log.timestamp)}
                         </span>
                       </div>
                     </td>

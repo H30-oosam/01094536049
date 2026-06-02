@@ -32,7 +32,26 @@ async function startServer() {
   app.use("/api/ai", aiRoutes);
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", service: "Hossam Elwardany HR Enterprise Backend" });
+    const memoryUsage = process.memoryUsage();
+    res.json({
+      status: "Operational",
+      service: "Hossam Elwardany HR Enterprise Systems API Gateway",
+      timestamp: new Date().toISOString(),
+      system: {
+        uptime: `${Math.floor(process.uptime())}s`,
+        pid: process.pid,
+        nodeVersion: process.version,
+        platform: process.platform,
+        architecture: process.arch,
+      },
+      telemetry: {
+        heapTotalMB: (memoryUsage.heapTotal / 1024 / 1024).toFixed(2) + " MB",
+        heapUsedMB: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + " MB",
+        rssMB: (memoryUsage.rss / 1024 / 1024).toFixed(2) + " MB",
+        externalMB: (memoryUsage.external / 1024 / 1024).toFixed(2) + " MB",
+      },
+      environment: process.env.NODE_ENV || "development",
+    });
   });
 
   // Vite middleware for development (should be last before error handler)

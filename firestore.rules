@@ -1,12 +1,127 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ---------------------------------------------------------
-    // Allow read/write for all collections to ensure seamless
-    // demo, testing, and operation in the sandboxed preview environment.
-    // ---------------------------------------------------------
+
+    // Global default-deny safety net
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    
+    // Checks if the user is authenticated via Firebase Auth
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Validates that document IDs are within safety bounds
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Check if the data has correct timestamp schema
+    function isValidTimestamp(ts) {
+      return ts != null;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || request.auth.token.email == 'hossam@admin.com');
+      allow delete: if isSignedIn() && (request.auth.token.email == 'hossam@admin.com');
+    }
+
+    // 2. Employees collection
+    match /employees/{employeeId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(employeeId);
+    }
+
+    // 3. Departments
+    match /departments/{deptId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(deptId);
+    }
+
+    // 4. Attendance
+    match /attendance/{attId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(attId);
+    }
+
+    // 5. Leave Requests
+    match /leaveRequests/{leaveId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(leaveId);
+    }
+
+    // 5b. Leaves (Active match for App Pages)
+    match /leaves/{leaveId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(leaveId);
+    }
+
+    // 6. Payroll
+    match /payroll/{payId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(payId);
+    }
+
+    // 7. Job Posts
+    match /jobPosts/{jobId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(jobId);
+    }
+
+    // 8. Candidates
+    match /candidates/{candId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(candId);
+    }
+
+    // 9. Performance Reviews
+    match /performanceReviews/{reviewId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(reviewId);
+    }
+
+    // 10. Training Courses
+    match /trainingCourses/{courseId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(courseId);
+    }
+
+    // 11. Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(notifId);
+    }
+
+    // 12. Projects
+    match /projects/{projId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(projId);
+    }
+
+    // 13. Tasks
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(taskId);
+    }
+
+    // 14. Activity Logs
+    // Allows logging and viewing historic audit trails securely
+    match /activity_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(logId);
+    }
+
+    // 15. WhatsApp Alerts
+    match /whatsapp_alerts/{alertId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isValidId(alertId);
     }
   }
 }

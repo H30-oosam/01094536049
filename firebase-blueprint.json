@@ -208,6 +208,20 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "userName", "action", "details", "type", "collection", "timestamp"]
+    },
+    "WhatsAppAlert": {
+      "title": "WhatsAppAlert",
+      "description": "Alert logs triggered via the WhatsApp integration panel.",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "message": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["employeeId", "message", "phone"]
     }
   },
   "firestore": {
@@ -216,6 +230,7 @@
     "departments": { "schema": "Department", "description": "Department definitions." },
     "attendance": { "schema": "Attendance", "description": "Daily attendance logs." },
     "leaveRequests": { "schema": "LeaveRequest", "description": "Leave management." },
+    "leaves": { "schema": "LeaveRequest", "description": "Leave records." },
     "payroll": { "schema": "Payroll", "description": "Payroll history." },
     "jobPosts": { "schema": "JobPost", "description": "Recruitment job posts." },
     "candidates": { "schema": "Candidate", "description": "Job candidates." },
@@ -224,6 +239,7 @@
     "notifications": { "schema": "Notification", "description": "User notifications." },
     "projects": { "schema": "Project", "description": "Tracks company projects and performance." },
     "tasks": { "schema": "Task", "description": "Action items and tasks." },
-    "activity_logs": { "schema": "ActivityLog", "description": "Admin actions auditing trail." }
+    "activity_logs": { "schema": "ActivityLog", "description": "Admin actions auditing trail." },
+    "whatsapp_alerts": { "schema": "WhatsAppAlert", "description": "WhatsApp notification logs." }
   }
 }

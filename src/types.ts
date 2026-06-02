@@ -23,6 +23,7 @@ export interface Employee {
   salary: number;
   status: 'active' | 'on_leave' | 'terminated';
   photoURL?: string;
+  leaveBalance?: number; // annual leave balance remaining
   createdAt?: any;
   updatedAt?: any;
 }

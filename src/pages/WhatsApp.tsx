@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   QrCode, Smartphone, Wifi, Battery, LogOut, CheckCircle, RefreshCw, Send,
   Users, Bot, MessageSquare, AlertCircle, Sparkles, Building, Play, Pause, BellRing, History, ShieldAlert,
-  FileText, Plus, Trash2, Copy, Edit2
+  FileText, Plus, Trash2, Copy, Edit2, Download
 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 
@@ -182,6 +182,35 @@ export default function WhatsApp() {
     }
   };
 
+  const handleDownloadLogsCSV = () => {
+    if (!logs || logs.length === 0) {
+      alert(isRTL ? 'لا توجد سجلات لتصديرها' : 'No logs to export');
+      return;
+    }
+
+    const headers = isRTL 
+      ? ['المعرف', 'الوقت', 'الهاتف/المستلم', 'محتوى الرسالة', 'نوع العملية']
+      : ['Log ID', 'Timestamp', 'Contact/Recipient', 'Message Body', 'Log Type'];
+
+    const rows = logs.map(log => [
+      log.id,
+      log.time,
+      log.recipient || 'System',
+      `"${(log.message || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+      log.type
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", isRTL ? "سجلات_الرسائل_حسام_الورداني.csv" : "hossam_elwardany_whatsapp_logs.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Input states
   const [targetPhone, setTargetPhone] = useState('');
   const [targetMessage, setTargetMessage] = useState('');
@@ -194,10 +223,20 @@ export default function WhatsApp() {
   const [newReply, setNewReply] = useState('');
 
   // Logs state
-  const [logs, setLogs] = useState<Array<{ id: string; time: string; recipient: string; message: string; type: 'sent' | 'received' | 'system' }>>(() => {
+  const [logs, setLogs] = useState<Array<{ id: string; time: string; recipient: string; message: string; type: 'sent' | 'received' | 'system' | 'error' }>>(() => {
     const savedLogs = localStorage.getItem('whatsapp_logs');
-    return savedLogs ? JSON.parse(savedLogs) : [
-      { id: '1', time: new Date(Date.now() - 3600000).toLocaleTimeString(), recipient: 'System', message: 'WhatsApp integration service started.', type: 'system' }
+    if (savedLogs) {
+      try {
+        return JSON.parse(savedLogs);
+      } catch (e) {
+        // ignore fallback
+      }
+    }
+    return [
+      { id: '1', time: new Date(Date.now() - 600000).toLocaleTimeString(), recipient: isRTL ? 'خالد العتيبي' : 'Khalid Al-Otaibi', message: isRTL ? 'تم تسليم إشعار كشف الرواتب لشهر مايو بنجاح.' : 'Successfully delivered payroll notice for May.', type: 'sent' },
+      { id: '2', time: new Date(Date.now() - 1200000).toLocaleTimeString(), recipient: '+966509998888', message: isRTL ? 'فشل إرسال التنبيه: الرقم غير مسجل في الخدمة.' : 'Transmission failed: phone number is not registered on WhatsApp.', type: 'error' },
+      { id: '3', time: new Date(Date.now() - 1800000).toLocaleTimeString(), recipient: isRTL ? 'سارة الغامدي' : 'Sara Al-Ghamdi', message: isRTL ? 'تم مشاركة تنبيه تسجيل الحضور الصباحي.' : 'Shared daily morning attendance reminder.', type: 'sent' },
+      { id: '4', time: new Date(Date.now() - 3600000).toLocaleTimeString(), recipient: 'System', message: isRTL ? 'بدء تشغيل بوابة الربط التلقائي للواتساب.' : 'WhatsApp automation gateway service initialized.', type: 'system' }
     ];
   });
 
@@ -297,7 +336,7 @@ export default function WhatsApp() {
     }
   };
 
-  const addLog = (recipient: string, message: string, type: 'sent' | 'received' | 'system') => {
+  const addLog = (recipient: string, message: string, type: 'sent' | 'received' | 'system' | 'error') => {
     const newLog = {
       id: Math.random().toString(),
       time: new Date().toLocaleTimeString(),
@@ -446,6 +485,11 @@ export default function WhatsApp() {
       </svg>
     );
   };
+
+  const totalSent = logs.filter(log => log.type === 'sent').length;
+  const totalErrors = logs.filter(log => log.type === 'error').length;
+  const totalLogCount = totalSent + totalErrors;
+  const successRate = totalLogCount > 0 ? Math.round((totalSent / totalLogCount) * 100) : 100;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -927,16 +971,83 @@ export default function WhatsApp() {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (window.confirm(isRTL ? 'هل تريد تصفية السجل بالكامل؟' : 'Clear all log records?')) {
-                        setLogs([{ id: '1', time: new Date().toLocaleTimeString(), recipient: 'System', message: 'Logs flushed by administrator.', type: 'system' }]);
-                      }
-                    }}
-                    className="text-xs text-gray-500 hover:text-rose-500 font-bold flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-lg"
-                  >
-                    <span>{isRTL ? 'تصفية السجل' : 'Clear Feed'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadLogsCSV}
+                      className="text-xs text-emerald-600 hover:text-white dark:text-emerald-400 hover:bg-emerald-500 font-bold flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-500/10 rounded-lg cursor-pointer transition-all active:scale-95"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{isRTL ? 'تصدير سجل الرسائل (CSV)' : 'Download CSV'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm(isRTL ? 'هل تريد تصفية السجل بالكامل؟' : 'Clear all log records?')) {
+                          setLogs([{ id: '1', time: new Date().toLocaleTimeString(), recipient: 'System', message: 'Logs flushed by administrator.', type: 'system' }]);
+                        }
+                      }}
+                      className="text-xs text-gray-500 hover:text-rose-500 font-bold flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-lg cursor-pointer transition-all active:scale-95"
+                    >
+                      <span>{isRTL ? 'تصفية السجل' : 'Clear Feed'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Session Transmission Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Messages sent card */}
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center justify-between shadow-sm transition-all hover:border-emerald-500/20">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                        {isRTL ? 'إجمالي الرسائل المرسلة اليوم' : 'Total Messages Sent Today'}
+                      </span>
+                      <h4 className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                        {totalSent}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                        {isRTL ? 'رسائل بث وتنبيهات فردية ناجحة' : 'Successful broadcast & manual alerts'}
+                      </p>
+                    </div>
+                    <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl">
+                      <Send className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                  </div>
+
+                  {/* Errors / failures card */}
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center justify-between shadow-sm transition-all hover:border-rose-500/20">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                        {isRTL ? 'إجمالي الأخطاء والعرقلات' : 'Total Errors / Failures'}
+                      </span>
+                      <h4 className={`text-xl font-black ${totalErrors > 0 ? 'text-rose-500 animate-pulse' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {totalErrors}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                        {isRTL ? 'فشل الإرسال أو مهلات الاتصال' : 'Transmission faults or network timeouts'}
+                      </p>
+                    </div>
+                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl">
+                      <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                  </div>
+
+                  {/* Delivery Rate card */}
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center justify-between shadow-sm transition-all hover:border-indigo-500/20">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                        {isRTL ? 'معدل كفاءة الخدمة' : 'Service Accuracy'}
+                      </span>
+                      <h4 className="text-xl font-black text-indigo-500">
+                        {successRate}%
+                      </h4>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                        {isRTL ? 'أداء موثوقية البوابة والخدمة' : 'Gateway processing & delivery authenticity'}
+                      </p>
+                    </div>
+                    <div className="p-3.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-2xl">
+                      <Sparkles className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-gray-950 p-6 rounded-3xl font-mono text-[11px] text-emerald-400 space-y-3 max-h-96 overflow-y-auto">
@@ -950,8 +1061,14 @@ export default function WhatsApp() {
                       {log.type === 'sent' && (
                         <span className="text-sky-400 shrink-0 select-none">[TX_GATEWAY: {log.recipient}]</span>
                       )}
+                      {log.type === 'error' && (
+                        <span className="text-rose-500 shrink-0 select-none">[TX_FAULT: {log.recipient}]</span>
+                      )}
+                      {log.type === 'received' && (
+                        <span className="text-indigo-400 shrink-0 select-none">[RX_GATEWAY: {log.recipient}]</span>
+                      )}
                       
-                      <span className={log.type === 'system' ? 'text-gray-300' : 'text-emerald-400'}>
+                      <span className={log.type === 'system' ? 'text-gray-300' : log.type === 'error' ? 'text-rose-400' : 'text-emerald-400'}>
                         {log.message}
                       </span>
                     </div>

@@ -3,9 +3,9 @@ import {
   Users, Search, Filter, Plus, Edit2, Trash2, 
   Mail, Phone, MapPin, BadgeCheck, Clock, X, Upload, Camera, Loader2,
   Calendar, Briefcase, Building2, UserCircle, Shield, Award, LineChart, Wallet,
-  FileSpreadsheet, ExternalLink, MessageCircle
+  FileSpreadsheet, ExternalLink, MessageCircle, Lock
 } from 'lucide-react';
-import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useUIStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
@@ -26,6 +26,36 @@ const Employees = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  // User account state for Add Employee
+  const [createUserAccount, setCreateUserAccount] = useState(false);
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountRole, setAccountRole] = useState<'admin' | 'manager' | 'employee'>('employee');
+  const [accountPermissions, setAccountPermissions] = useState<Record<string, boolean>>({
+    dashboard: true,
+    employees: false,
+    tasks: true,
+    recruitment: false,
+    performancePay: false,
+    system: false,
+    permissions: false,
+  });
+
+  // Department states
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
+  const [editingDept, setEditingDept] = useState<any | null>(null);
+  const [deptForm, setDeptForm] = useState({ name: '', description: '' });
+  const [isDeptSubmitting, setIsDeptSubmitting] = useState(false);
+
+  const defaultDepts = [
+    { id: 'dept-eng', name: 'Engineering', description: 'Software engineering, development and infrastructure.' },
+    { id: 'dept-mgmt', name: 'Management', description: 'Executive leadership, strategy, and administrative management.' },
+    { id: 'dept-design', name: 'Design', description: 'Product UI/UX design, visuals and user experience research.' },
+    { id: 'dept-hr', name: 'Human Resources', description: 'Talent recruitment, employee relations and workforce training.' },
+    { id: 'dept-qa', name: 'Quality Assurance', description: 'Product testing, quality engineering and continuous delivery.' },
+    { id: 'dept-mktg', name: 'Marketing', description: 'Brand advertising, user acquisition and social media.' }
+  ];
 
   const [formData, setFormData] = useState<{
     firstName: string;
@@ -224,6 +254,66 @@ const Employees = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const qDepts = query(collection(db, 'departments'));
+    const unsubscribeDepts = onSnapshot(qDepts, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (docs.length > 0) {
+        setDepartments(docs);
+      } else {
+        setDepartments(defaultDepts);
+      }
+    }, (error) => {
+      console.error('Failed to load departments from Firestore:', error);
+      setDepartments(defaultDepts);
+    });
+    return () => unsubscribeDepts();
+  }, []);
+
+  const handleSaveDept = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deptForm.name.trim()) return;
+    setIsDeptSubmitting(true);
+    try {
+      if (editingDept) {
+        await updateDoc(doc(db, 'departments', editingDept.id), {
+          name: deptForm.name,
+          description: deptForm.description,
+        });
+      } else {
+        const id = `dept-${Date.now()}`;
+        await setDoc(doc(db, 'departments', id), {
+          id,
+          name: deptForm.name,
+          description: deptForm.description,
+        });
+      }
+      setDeptForm({ name: '', description: '' });
+      setEditingDept(null);
+    } catch (error) {
+      console.error('Error saving department:', error);
+      alert(isRTL ? 'خطأ أثناء الحفظ. يرجى المحاولة لاحقاً.' : 'Failed to save department. Please try again.');
+    } finally {
+      setIsDeptSubmitting(false);
+    }
+  };
+
+  const handleEditDept = (dept: any) => {
+    setEditingDept(dept);
+    setDeptForm({ name: dept.name, description: dept.description || '' });
+  };
+
+  const handleDeleteDept = async (deptId: string) => {
+    if (window.confirm(isRTL ? 'هل أنت متأكد من حذف هذا القسم؟' : 'Are you sure you want to delete this department?')) {
+      try {
+        await deleteDoc(doc(db, 'departments', deptId));
+      } catch (error) {
+        console.error('Error deleting department:', error);
+        alert(isRTL ? 'فشل الحذف.' : 'Failed to delete department.');
+      }
+    }
+  };
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -254,6 +344,18 @@ const Employees = () => {
     });
     setPhotoPreview(null);
     setEditingEmployee(null);
+    setCreateUserAccount(false);
+    setAccountPassword('');
+    setAccountRole('employee');
+    setAccountPermissions({
+      dashboard: true,
+      employees: false,
+      tasks: true,
+      recruitment: false,
+      performancePay: false,
+      system: false,
+      permissions: false,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -275,25 +377,55 @@ const Employees = () => {
     };
 
     try {
+      let emplId = '';
       if (editingEmployee) {
-        await updateDoc(doc(db, 'employees', editingEmployee.id!), {
+        emplId = editingEmployee.id!;
+        const updatedData = {
           ...data,
+          ...(createUserAccount ? { userId: `user-${emplId}` } : {}),
+        };
+        await updateDoc(doc(db, 'employees', emplId), {
+          ...updatedData,
           updatedAt: serverTimestamp(),
         });
         if (user) {
           logActivity(user as any, 'UPDATE_EMPLOYEE', `Updated employee: ${formData.firstName} ${formData.lastName}`, ActivityType.UPDATE, 'employees');
         }
-        updateLocalEmployee(localEmployee);
+        updateLocalEmployee({ ...localEmployee, ...updatedData });
       } else {
-        await addDoc(collection(db, 'employees'), {
+        const docRef = await addDoc(collection(db, 'employees'), {
           ...data,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        emplId = docRef.id;
+        if (createUserAccount) {
+          await updateDoc(doc(db, 'employees', emplId), {
+            userId: `user-${emplId}`,
+          });
+        }
         if (user) {
           logActivity(user as any, 'CREATE_EMPLOYEE', `Added new employee: ${formData.firstName} ${formData.lastName}`, ActivityType.CREATE, 'employees');
         }
       }
+
+      if (createUserAccount) {
+        const userId = `user-${emplId}`;
+        await setDoc(doc(db, 'users', userId), {
+          uid: userId,
+          email: formData.email,
+          displayName: `${formData.firstName} ${formData.lastName}`,
+          role: accountRole,
+          password: accountPassword || '123456',
+          permissions: accountPermissions,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        if (user) {
+          logActivity(user as any, 'CREATE_USER', `Created linked employee user account for ${formData.email}`, ActivityType.CREATE, 'users');
+        }
+      }
+
       setIsModalOpen(false);
       resetForm();
     } catch (error) {
@@ -375,6 +507,11 @@ const Employees = () => {
     emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getDeptName = (deptId: string) => {
+    const dept = departments.find(d => d.id === deptId || d.name === deptId);
+    return dept ? dept.name : (deptId || 'Operations');
+  };
+
   return (
     <div className="space-y-8 pb-12 text-[#002D62]">
       
@@ -405,6 +542,13 @@ const Employees = () => {
           >
             <FileSpreadsheet className="w-4.5 h-4.5 text-emerald-700 stroke-[2.5]" />
             <span>{isRTL ? 'تصديرExcel' : 'Export'}</span>
+          </button>
+          <button 
+            onClick={() => { setEditingDept(null); setDeptForm({ name: '', description: '' }); setIsDeptModalOpen(true); }}
+            className="flex items-center gap-2 td-btn-secondary text-xs py-2.5 text-indigo-800 border-indigo-200 hover:border-indigo-500"
+          >
+            <Building2 className="w-4.5 h-4.5 stroke-[2.5]" />
+            <span>{isRTL ? 'إدارة الأقسام' : 'Manage Departments'}</span>
           </button>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }}
@@ -485,7 +629,7 @@ const Employees = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-[10px] font-black text-[#002D62] bg-[#002D62]/5 border-2 border-[#002D62]/12 px-2.5 py-1 rounded-xl inline-block uppercase tracking-wider">
-                        {employee.departmentId || 'Operations'}
+                        {getDeptName(employee.departmentId)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -626,7 +770,7 @@ const Employees = () => {
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#002D62]/10">
                        <div className="flex items-center gap-2">
                           <Building2 className="w-5 h-5 stroke-[2.2]" />
-                          <span className="text-sm font-black uppercase tracking-wider">{selectedProfile.departmentId || 'Operations'}</span>
+                          <span className="text-sm font-black uppercase tracking-wider">{getDeptName(selectedProfile.departmentId)}</span>
                        </div>
                        <Award className="w-5 h-5 text-amber-500" />
                     </div>
@@ -778,14 +922,9 @@ const Employees = () => {
                     onChange={(e) => setFormData({...formData, department: e.target.value})}
                   >
                     <option value="">{isRTL ? 'اختر قسم العمل' : 'Select Branch'}</option>
-                    <option value="HR">HR</option>
-                    <option value="IT">IT</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Management">Management</option>
-                    <option value="Design">Design</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -822,6 +961,112 @@ const Employees = () => {
                 </div>
               </div>
 
+              {/* User Account Creation Section */}
+              <div className="pt-4 border-t-2 border-[#002D62]/10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="createUserAccount"
+                    checked={createUserAccount}
+                    onChange={(e) => {
+                      setCreateUserAccount(e.target.checked);
+                      if (e.target.checked && !accountPassword) {
+                        setAccountPassword('123456'); // Default default password
+                      }
+                    }}
+                    className="w-4.5 h-4.5 rounded text-[#002D62] focus:ring-[#002D62] border-[#002D62]/30"
+                  />
+                  <label htmlFor="createUserAccount" className="text-xs font-black text-[#002D62] uppercase tracking-wider select-none cursor-pointer">
+                    {isRTL ? 'إنشاء حساب مستخدم للنظام لهذا الموظف' : 'Create System User Account for this Employee'}
+                  </label>
+                </div>
+
+                {createUserAccount && (
+                  <div className="p-4 bg-[#002D62]/5 border-2 border-[#002D62]/20 rounded-xl space-y-4 animate-fadeIn">
+                    <p className="text-[10px] font-black text-[#002D62] uppercase tracking-widest border-b border-[#002D62]/10 pb-2">
+                      {isRTL ? 'إعدادات الحساب والصلاحيات' : 'Account Credentials & Permissions'}
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                          {isRTL ? 'اسم المستخدم (البريد)' : 'Username (Email)'}
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          className="w-full td-input py-2 text-xs bg-white"
+                          value={formData.email}
+                          disabled
+                          title="Username is bound to the employee email"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                          {isRTL ? 'كلمة المرور' : 'Password'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="123456"
+                          className="w-full td-input py-2 text-xs bg-white"
+                          value={accountPassword}
+                          onChange={(e) => setAccountPassword(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                          {isRTL ? 'الدور الأساسي بالمنظومة' : 'Primary System Role'}
+                        </label>
+                        <select
+                          required
+                          className="w-full td-input py-2 text-xs bg-white"
+                          value={accountRole}
+                          onChange={(e) => setAccountRole(e.target.value as any)}
+                        >
+                          <option value="employee">{isRTL ? 'موظف (Employee)' : 'Employee'}</option>
+                          <option value="manager">{isRTL ? 'مدير قسم (Manager)' : 'Manager'}</option>
+                          <option value="admin">{isRTL ? 'مسؤول (Admin)' : 'Admin'}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                        {isRTL ? 'صلاحيات الوصول التفصيلية للمنظومة' : 'Granular access control permissions'}
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3.5 border border-[#002D62]/10 rounded-xl">
+                        {Object.keys(accountPermissions).map((permissionKey) => (
+                          <div key={permissionKey} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`perm-${permissionKey}`}
+                              checked={accountPermissions[permissionKey]}
+                              onChange={(e) => setAccountPermissions({
+                                ...accountPermissions,
+                                [permissionKey]: e.target.checked
+                              })}
+                              className="w-4 h-4 rounded text-[#002D62] focus:ring-[#002D62] border-[#002D62]/30"
+                            />
+                            <label htmlFor={`perm-${permissionKey}`} className="text-[10px] font-bold text-[#002D62]/80 select-none cursor-pointer">
+                              {permissionKey === 'dashboard' && (isRTL ? 'اللوحة الرئيسية' : 'Dashboard')}
+                              {permissionKey === 'employees' && (isRTL ? 'الملفات والموظفين' : 'Employees')}
+                              {permissionKey === 'tasks' && (isRTL ? 'المهام والمشاريع' : 'Tasks')}
+                              {permissionKey === 'recruitment' && (isRTL ? 'الاستقطاب' : 'Recruitment')}
+                              {permissionKey === 'performancePay' && (isRTL ? 'الرواتب والأداء' : 'Payroll/Performance')}
+                              {permissionKey === 'system' && (isRTL ? 'إعدادات النظام' : 'System Setup')}
+                              {permissionKey === 'permissions' && (isRTL ? 'الصلاحيات' : 'Permissions')}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t-2 border-[#002D62]/10">
                 <button
                   type="button"
@@ -839,6 +1084,144 @@ const Employees = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Department Management Modal */}
+      {isDeptModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full border-2 border-[#002D62] shadow-[6px_6px_0px_0px_#002D62] overflow-hidden animate-scaleUp">
+            
+            {/* Modal Header */}
+            <div className="p-6 bg-slate-50 border-b-2 border-[#002D62]/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-[#002D62] tracking-tight">
+                    {isRTL ? 'إدارة الأقسام التنظيمية' : 'Manage Corporate Departments'}
+                  </h2>
+                  <p className="text-[10px] text-slate-500 font-bold">
+                    {isRTL ? 'إضافة وتعديل وحذف الأقسام وتحديث بيانات الهيكل التنظيمي' : 'Add, edit, and delete corporate divisions and organizational hierarchy'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDeptModalOpen(false)}
+                className="p-1.5 hover:bg-slate-200 border-2 border-transparent hover:border-slate-300 rounded-xl text-slate-500 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              
+              {/* Add/Edit Form */}
+              <form onSubmit={handleSaveDept} className="bg-slate-50 p-4 border border-[#002D62]/10 rounded-2xl space-y-3.5">
+                <p className="text-xs font-black text-indigo-900 uppercase tracking-widest">
+                  {editingDept ? (isRTL ? 'تعديل بيانات القسم' : 'Edit Section Details') : (isRTL ? 'إنشاء قسم جديد' : 'Incept New Department')}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                      {isRTL ? 'اسم القسم' : 'Department Name'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={isRTL ? 'مثال: المبيعات، المحاسبة' : 'e.g. Sales, Accounting'}
+                      className="w-full td-input py-2 text-xs bg-white"
+                      value={deptForm.name}
+                      onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#002D62]/75 uppercase tracking-wider block">
+                      {isRTL ? 'وصف القسم' : 'Description'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={isRTL ? 'وصف موجز للمهام والمسؤوليات...' : 'Brief summary of responsibilities...'}
+                      className="w-full td-input py-2 text-xs bg-white"
+                      value={deptForm.description}
+                      onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2.5 pt-1">
+                  {editingDept && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingDept(null); setDeptForm({ name: '', description: '' }); }}
+                      className="td-btn-secondary px-4 py-1.5 text-xs bg-white"
+                    >
+                      {isRTL ? 'إلغاء التعديل' : 'Cancel Edit'}
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isDeptSubmitting}
+                    className="td-btn-primary px-5 py-1.5 text-xs flex items-center gap-1.5"
+                  >
+                    {isDeptSubmitting && <Loader2 className="w-3 h-3 animate-spin" />}
+                    <span>{editingDept ? (isRTL ? 'تعديل القسم' : 'Apply') : (isRTL ? 'إضافة القسم' : 'Create')}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Departments Directory List */}
+              <div className="space-y-2">
+                <p className="text-xs font-black text-[#002D62] uppercase tracking-widest">
+                  {isRTL ? 'دليل الأقسام المسجلة' : 'Registered Divisions Index'}
+                </p>
+                <div className="max-h-60 overflow-y-auto divide-y divide-[#002D62]/10 border border-[#002D62]/15 rounded-2xl bg-white">
+                  {departments.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-slate-400 font-semibold">
+                      {isRTL ? 'لا توجد أقسام مسجلة حالياً.' : 'No divisions indexed yet.'}
+                    </p>
+                  ) : (
+                    departments.map((dept) => (
+                      <div key={dept.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-black text-[#002D62]">{dept.name}</p>
+                          <p className="text-xs text-slate-500 font-semibold">{dept.description || (isRTL ? 'لا يوجد وصف متاح.' : 'No description available.')}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleEditDept(dept)}
+                            className="p-1.5 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-indigo-700 rounded-lg transition-all"
+                            title={isRTL ? 'تعديل' : 'Edit'}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDept(dept.id)}
+                            className="p-1.5 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-rose-600 rounded-lg transition-all"
+                            title={isRTL ? 'حذف' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t-2 border-[#002D62]/10 flex justify-end">
+              <button
+                onClick={() => setIsDeptModalOpen(false)}
+                className="td-btn-secondary px-6 py-2 text-xs"
+              >
+                {isRTL ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
