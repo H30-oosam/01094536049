@@ -19,7 +19,7 @@ export const useUIStore = create<UIState>((set) => ({
   isRTL: true,
   theme: 'light',
   logoUrl: '/logo.svg',
-  systemName: 'أكاديمية زويل | Zewail Academy',
+  systemName: 'خدمات حسام الورداني للموارد البشرية | Hossam Elwardany HR Services',
   currency: 'EGP',
   sidebarOpen: false,
   toggleRTL: () => set((state) => ({ isRTL: !state.isRTL })),

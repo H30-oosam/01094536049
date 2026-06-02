@@ -295,8 +295,8 @@ const Login = () => {
                 </span>
                 <div className="h-0.5 w-12 bg-[#002D62]" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-black italic text-[#002D62] tracking-wide mt-2">
-                Zewail Academy
+              <h1 className="text-xl md:text-2xl font-black italic text-[#002D62] tracking-wide mt-2">
+                Hossam Elwardany HR Services
               </h1>
             </div>
           </div>

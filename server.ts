@@ -32,7 +32,7 @@ async function startServer() {
   app.use("/api/ai", aiRoutes);
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", service: "Zewail Academy Enterprise Backend" });
+    res.json({ status: "ok", service: "Hossam Elwardany HR Enterprise Backend" });
   });
 
   // Vite middleware for development (should be last before error handler)

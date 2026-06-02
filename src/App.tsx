@@ -63,9 +63,9 @@ export default function App() {
 
   useEffect(() => {
     if (isRTL) {
-      document.title = 'أكاديمية زويل | Zewail Academy';
+      document.title = 'خدمات حسام الورداني للموارد البشرية | Hossam Elwardany HR Services';
     } else {
-      document.title = 'Zewail Academy | LMS & Management';
+      document.title = 'Hossam Elwardany HR Services';
     }
   }, [isRTL]);
 

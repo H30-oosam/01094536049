@@ -499,7 +499,7 @@ export default function NotificationCenter() {
             {/* Footer */}
             <div className="p-3 bg-white dark:bg-slate-900 border-t-2 border-[#002D62]/10 dark:border-sky-500/15 text-center">
               <span className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#002D62]/55 dark:text-sky-400/60 leading-none">
-                Zewail Academy Notification Service
+                Hossam Elwardany HR Notification Service
               </span>
             </div>
           </motion.div>

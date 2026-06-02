@@ -1,9 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   QrCode, Smartphone, Wifi, Battery, LogOut, CheckCircle, RefreshCw, Send,
-  Users, Bot, MessageSquare, AlertCircle, Sparkles, Building, Play, Pause, BellRing, History, ShieldAlert
+  Users, Bot, MessageSquare, AlertCircle, Sparkles, Building, Play, Pause, BellRing, History, ShieldAlert,
+  FileText, Plus, Trash2, Copy, Edit2
 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
+
+interface WhatsAppTemplate {
+  id: string;
+  title: string;
+  category: 'payroll' | 'attendance' | 'onboarding' | 'general' | string;
+  categoryAr: string;
+  content: string;
+}
 import { collection, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Employee } from '../types';
@@ -43,8 +52,8 @@ export default function WhatsApp() {
       uptime: '0h 0m',
       autoReply: true,
       welcomeMessage: isRTL 
-        ? 'مرحباً بك في نظام أكاديمية زويل لإدارة الموارد البشرية. تم تلقي رسالتك وسنقوم بالرد عليك في أقرب وقت.'
-        : 'Welcome to Zewail Academy HR Management System. We have received your message and will reply shortly.',
+        ? 'مرحباً بك في نظام Hossam Elwardany HR Services لإدارة الموارد البشرية. تم تلقي رسالتك وسنقوم بالرد عليك في أقرب وقت.'
+        : 'Welcome to Hossam Elwardany HR Services Management System. We have received your message and will reply shortly.',
       keywords: [
         { keyword: 'خصم', reply: isRTL ? 'يمكنك مراجعة كشف الرواتب والخصومات من صفحة الرواتب والمسيرات في حسابك.' : 'You can review payroll details and deductions from the Payroll tab in your account.' },
         { keyword: 'رصيد', reply: isRTL ? 'رصيد إجازاتك الحالي متوفر في صفحة الإجازات والطلبات.' : 'Your current leaves balance is available in the Leaves and Requests tab.' },
@@ -58,7 +67,120 @@ export default function WhatsApp() {
   const [countdown, setCountdown] = useState(45);
   const [, setQrValue] = useState('https://web.whatsapp.com/send?code=hossamhr-' + Math.random().toString(36).substring(7));
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'broadcast' | 'bot' | 'logs'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'broadcast' | 'bot' | 'logs' | 'templates'>('dashboard');
+
+  // Templates State
+  const [templates, setTemplates] = useState<WhatsAppTemplate[]>(() => {
+    const saved = localStorage.getItem('whatsapp_templates');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // ignore fallback
+      }
+    }
+    return [
+      {
+        id: 'tpl-1',
+        title: isRTL ? 'إيداع مسيرات الرواتب' : 'Payroll Deposit Alert',
+        category: 'payroll',
+        categoryAr: 'الرواتب والمسيرات',
+        content: isRTL 
+          ? 'أهلاً {name}، يسعدنا إشعاركم بإيداع مسير رواتب هذا الشهر (الرقم الوظيفي: {id}) في حسابكم البنكي. شكراً لجهودكم المتميزة مع خدمات حسام الورداني للموارد البشرية.'
+          : 'Dear {name}, we are pleased to inform you that your monthly salary (Employee ID: {id}) has been deposited into your bank account. Thank you for your hard work with Hossam Elwardany HR Services!'
+      },
+      {
+        id: 'tpl-2',
+        title: isRTL ? 'تنبيه تسجيل الحضور اليومي' : 'Daily Attendance Reminder',
+        category: 'attendance',
+        categoryAr: 'الحضور والغياب',
+        content: isRTL 
+          ? 'تنبيه عاجل: عزيزي الموظف {name}، يرجى التأكد من تسجيل بصمة الحضور اليومي لليوم عبر النظام لتفادي احتساب غياب لقسم {id}.'
+          : 'Urgent Reminder: Dear {name}, please make sure to mark your daily attendance in the portal to avoid leave deduction for ID: {id}.'
+      },
+      {
+        id: 'tpl-3',
+        title: isRTL ? 'تهنئة انضمام موظف جديد' : 'New Employee Welcome',
+        category: 'onboarding',
+        categoryAr: 'التعيين والتهيئة',
+        content: isRTL 
+          ? 'مرحباً بك {name} في خدمات حسام الورداني للموارد البشرية! نسعد بانضمامك الكريم لأسرتنا برقم وظيفي {id}. نتمنى لك مسيرة مهنية حافلة بالنجاح والإيجابية.'
+          : 'Welcome {name} to Hossam Elwardany HR Services! We are thrilled to welcome you to our team. Your employee ID is {id}. Wishing you an outstanding career journey!'
+      },
+      {
+        id: 'tpl-4',
+        title: isRTL ? 'طلب مراجعة التقييم السنوي' : 'Performance Appraisal Request',
+        category: 'general',
+        categoryAr: 'عامة',
+        content: isRTL 
+          ? 'عزيزي الموظف {name} (الرقم الوظيفي: {id})، نرجو التكرم بالتنسيق مع مديرك المباشر لاستكمال نموذج التقييم السنوي من لوحة تحكم الأداء.'
+          : 'Dear employee {name} (ID: {id}), please coordinate with your direct supervisor to complete your performance appraisal form on the HR performance dashboard.'
+      }
+    ];
+  });
+
+  // Save templates to localstorage
+  useEffect(() => {
+    localStorage.setItem('whatsapp_templates', JSON.stringify(templates));
+  }, [templates, isRTL]);
+
+  // Template custom creator/editor state variables
+  const [newTemplateTitle, setNewTemplateTitle] = useState('');
+  const [newTemplateCategory, setNewTemplateCategory] = useState('payroll');
+  const [newTemplateContent, setNewTemplateContent] = useState('');
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+
+  const handleSaveTemplate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTemplateTitle.trim() || !newTemplateContent.trim()) return;
+
+    const categoryArMap: Record<string, string> = {
+      payroll: isRTL ? 'الرواتب والمسيرات' : 'Payroll Slips',
+      attendance: isRTL ? 'الحضور والغياب' : 'Attendance & Leaves',
+      onboarding: isRTL ? 'التعيين والتهيئة' : 'Recruitment & Onboarding',
+      general: isRTL ? 'عامة' : 'General Notification'
+    };
+
+    if (editingTemplateId) {
+      setTemplates(prev => prev.map(t => t.id === editingTemplateId ? {
+        ...t,
+        title: newTemplateTitle.trim(),
+        category: newTemplateCategory,
+        categoryAr: categoryArMap[newTemplateCategory] || 'عامة',
+        content: newTemplateContent.trim()
+      } : t));
+      setEditingTemplateId(null);
+      alert(isRTL ? 'تم تحديث القالب بنجاح!' : 'Template updated successfully!');
+    } else {
+      const newTpl: WhatsAppTemplate = {
+        id: 'tpl-' + Math.random().toString(36).substring(7),
+        title: newTemplateTitle.trim(),
+        category: newTemplateCategory,
+        categoryAr: categoryArMap[newTemplateCategory] || 'عامة',
+        content: newTemplateContent.trim()
+      };
+      setTemplates(prev => [...prev, newTpl]);
+      alert(isRTL ? 'تم حفظ القالب الجديد بنجاح!' : 'New template saved successfully!');
+    }
+
+    setNewTemplateTitle('');
+    setNewTemplateContent('');
+    setNewTemplateCategory('payroll');
+  };
+
+  const handleEditTemplate = (tpl: WhatsAppTemplate) => {
+    setEditingTemplateId(tpl.id);
+    setNewTemplateTitle(tpl.title);
+    setNewTemplateCategory(tpl.category);
+    setNewTemplateContent(tpl.content);
+    setActiveTab('templates');
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (window.confirm(isRTL ? 'هل أنت متأكد من رغبتك في حذف هذا القالب نهائياً؟' : 'Are you sure you want to delete this template permanently?')) {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    }
+  };
 
   // Input states
   const [targetPhone, setTargetPhone] = useState('');
@@ -408,6 +530,23 @@ export default function WhatsApp() {
                 <History className="w-4 h-4" />
                 <span>{isRTL ? 'سجل المحادثات والعمليات' : 'Session Transmission Logs'}</span>
               </button>
+
+              <button 
+                onClick={() => {
+                  setEditingTemplateId(null);
+                  setNewTemplateTitle('');
+                  setNewTemplateContent('');
+                  setActiveTab('templates');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-xs font-bold rounded-2xl transition-all cursor-pointer ${
+                  activeTab === 'templates' 
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/10' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>{isRTL ? 'مكتبة قوالب الرسائل' : 'WhatsApp Templates Lib'}</span>
+              </button>
             </div>
 
             {/* Quick Status Info widget */}
@@ -514,6 +653,28 @@ export default function WhatsApp() {
                       </div>
                     </div>
 
+                    {/* Integrated Quick Templates Panel */}
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                        {isRTL ? '⚡ إدراج قالب سريع للمراسلة الفردية:' : '⚡ Inject Quick Template for manual alert:'}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {templates.map(tpl => (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => {
+                              // Insert template and replace mock/demo data if desirable or keep it dynamic
+                              setTargetMessage(tpl.content);
+                            }}
+                            className="text-[10px] font-bold px-3 py-2 bg-emerald-50 hover:bg-emerald-500 hover:text-white dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 rounded-xl transition-all cursor-pointer"
+                          >
+                            {tpl.title}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <button 
                       type="submit" 
                       className="flex items-center gap-2 px-6 py-3.5 bg-emerald-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/15 hover:bg-emerald-600 cursor-pointer active:scale-95 transition-all w-fit"
@@ -602,19 +763,22 @@ export default function WhatsApp() {
                   )}
 
                   {/* Message body input */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
                       <label>{isRTL ? 'نص التعميم والرسالة الجماعية' : 'Broadcast Message Body'}</label>
-                      <button 
-                        type="button" 
-                        onClick={() => setBroadcastMessage(isRTL 
-                          ? 'أهلاً {name}، يسعدنا إشعاركم بإيداع مسير رواتب هذا الشهر في حساباتكم البنكية. شكراً لجهودكم.' 
-                          : 'Hello {name}, we are pleased to inform you that your payroll for this month has been processed.'
-                        )}
-                        className="text-emerald-600 dark:text-emerald-400 focus:outline-none hover:underline"
-                      >
-                        {isRTL ? 'استيراد قالب كشف الراتب' : 'Use Salary Template'}
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-gray-400 font-semibold">{isRTL ? 'استيراد قالب من المكتبة:' : 'Load from template library:'}</span>
+                        {templates.map(tpl => (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => setBroadcastMessage(tpl.content)}
+                            className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-all cursor-pointer font-bold text-[9px] uppercase"
+                          >
+                            {tpl.title}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <textarea
                       rows={5}
@@ -792,6 +956,194 @@ export default function WhatsApp() {
                       </span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: WHATSAPP TEMPLATES LIBRARY MANAGER */}
+            {activeTab === 'templates' && (
+              <div className="space-y-8">
+                {/* Save/Edit Template Form */}
+                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-4xl border border-gray-100 dark:border-slate-800/80 p-8 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-emerald-500" />
+                      {editingTemplateId 
+                        ? (isRTL ? 'تعديل قالب رسالة مسبقة الصياغة' : 'Edit Pre-set Message Template')
+                        : (isRTL ? 'إضافة قالب رسالة جديد للمكتبة' : 'Add New Message Template')
+                      }
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {isRTL 
+                        ? 'أنشئ قوالب رسائل مجهزة مسبقاً لاستخدامها في المراسلات الفردية والتعاميم الجماعية.' 
+                        : 'Create standard reusable messages to dispatch in manual single alerts or bulk group broadcasts.'}
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveTemplate} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{isRTL ? 'عنوان القالب' : 'Template Title'}</label>
+                        <input 
+                          type="text" 
+                          placeholder={isRTL ? 'مثال: إشعار الرواتب الشهرية' : 'e.g. Monthly Payroll Notice'}
+                          value={newTemplateTitle}
+                          onChange={(e) => setNewTemplateTitle(e.target.value)}
+                          required
+                          className="w-full text-xs font-bold p-3.5 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-sans"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{isRTL ? 'التصنيف والمجموعات' : 'Category Category'}</label>
+                        <select
+                          value={newTemplateCategory}
+                          onChange={(e) => setNewTemplateCategory(e.target.value)}
+                          className="w-full text-xs font-bold p-3.5 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        >
+                          <option value="payroll">{isRTL ? 'الرواتب والمسيرات' : 'Payroll Slips'}</option>
+                          <option value="attendance">{isRTL ? 'الحضور والغياب' : 'Attendance & Leaves'}</option>
+                          <option value="onboarding">{isRTL ? 'التعيين والتهيئة' : 'Recruitment & Onboarding'}</option>
+                          <option value="general">{isRTL ? 'عامة' : 'General Reminder'}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest gap-2">
+                        <label>{isRTL ? 'محتوى الرسالة والتعميم' : 'Message Text Content'}</label>
+                        <span className="text-[9px] text-indigo-500 font-black normal-case">
+                          {isRTL ? 'الرموز المدعومة: {name} للاسم، {id} للرقم الوظيفي.' : 'Allowed placeholders: {name} for employee name, {id} for Employee ID.'}
+                        </span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        required
+                        placeholder={isRTL ? 'اكتب محتوى الرسالة الافتراضية هنا... استخدم رمز الاسم {name} ورقم الهوية {id} ليتم دمجهم تلقائياً.' : 'Type message body here... Use {name} for dynamic names and {id} for official identity tags.'}
+                        value={newTemplateContent}
+                        onChange={(e) => setNewTemplateContent(e.target.value)}
+                        className="w-full text-xs font-bold p-4 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-sans"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button 
+                        type="submit" 
+                        className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/15 hover:bg-emerald-600 cursor-pointer active:scale-95 transition-all w-fit"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{editingTemplateId ? (isRTL ? 'تعديل وحفظ القالب' : 'Update Template') : (isRTL ? 'إضافة للمكتبة' : 'Add to Collection')}</span>
+                      </button>
+
+                      {editingTemplateId && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setEditingTemplateId(null);
+                            setNewTemplateTitle('');
+                            setNewTemplateContent('');
+                            setNewTemplateCategory('payroll');
+                          }}
+                          className="px-5 py-3 border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-850 cursor-pointer"
+                        >
+                          {isRTL ? 'إلغاء التعديل' : 'Cancel'}
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* Templates Grid List */}
+                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-4xl border border-gray-100 dark:border-slate-800/80 p-8 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                      {isRTL ? 'القوالب المحفوظة والمفعلة حالياً' : 'Current Active Templates Library'}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {isRTL 
+                        ? 'تصفح كافة القوالب المعتمدة في مكتبتك الخاصة. يمكنك نسخها أو تحويلها فوراً لمنافذ الإرسال.' 
+                        : 'Browse all templates registered in your private HR repository. Copy or load them into transmission modules.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {templates.map(tpl => (
+                      <div 
+                        key={tpl.id} 
+                        className="bg-white dark:bg-slate-950 border border-gray-150 dark:border-slate-850/80 rounded-3xl p-6 flex flex-col justify-between hover:shadow-lg transition-all relative group shadow-sm hover:border-emerald-500/20"
+                      >
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-[10px] font-black uppercase">
+                              {isRTL ? tpl.categoryAr : tpl.category.toUpperCase()}
+                            </span>
+                            
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleEditTemplate(tpl)}
+                                className="px-2 py-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-gray-50 dark:hover:bg-slate-900/60 rounded-lg cursor-pointer"
+                              >
+                                {isRTL ? 'تعديل' : 'Edit'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTemplate(tpl.id)}
+                                className="px-2 py-1 text-[10px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg cursor-pointer"
+                              >
+                                {isRTL ? 'حذف' : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <h4 className="text-sm font-black text-gray-800 dark:text-white mt-1">
+                            {tpl.title}
+                          </h4>
+
+                          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-semibold bg-gray-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-gray-100 dark:border-slate-800/80 font-mono select-all">
+                            {tpl.content}
+                          </p>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-between border-t border-gray-100 dark:border-slate-800/40 pt-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                navigator.clipboard.writeText(tpl.content);
+                                alert(isRTL ? 'تم نسخ نص القالب لحافظتك!' : 'Template text copied to clipboard!');
+                              } catch (err) {
+                                console.error('Clipboard action failed:', err);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>{isRTL ? 'نسخ النص' : 'Copy Text'}</span>
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setTargetMessage(tpl.content);
+                                setActiveTab('dashboard');
+                              }}
+                              className="px-2.5 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white text-[9px] font-black rounded-lg transition-all cursor-pointer"
+                            >
+                              {isRTL ? 'إدخال للإرسال الفردي' : 'Use In Single'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setBroadcastMessage(tpl.content);
+                                setActiveTab('broadcast');
+                              }}
+                              className="px-2.5 py-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white text-[9px] font-black rounded-lg transition-all cursor-pointer"
+                            >
+                              {isRTL ? 'إدخال للإرسال الجماعي' : 'Use In Broadcast'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

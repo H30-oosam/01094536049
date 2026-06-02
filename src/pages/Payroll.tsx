@@ -83,15 +83,15 @@ const Payroll = () => {
 
   const downloadTemplate = () => {
     const csvContent = isRTL 
-      ? "الاسم,الشهر,الأساسي,البدلات,الاستقطاعات\nأحمد محمد,June 2024,5000,1200,400\nد. أحمد زويل,June 2024,12000,3000,500\nرنا علي,June 2024,4200,800,200"
-      : "Name,Month,Base,Allowances,Deductions\nJohn Doe,June 2024,4500,1000,300\nZewail Scholar,June 2024,9500,2000,800\nJane Smith,June 2024,5200,1200,400";
+      ? "الاسم,الشهر,الأساسي,البدلات,الاستقطاعات\nأحمد محمد,June 2024,5000,1200,400\nحسام الورداني,June 2024,12000,3000,500\nرنا علي,June 2024,4200,800,200"
+      : "Name,Month,Base,Allowances,Deductions\nJohn Doe,June 2024,4500,1000,300\nHossam Elwardany,June 2024,12000,3000,500\nJane Smith,June 2024,5200,1200,400";
     
     // Support UTF-8 BOM so Excel opens Arabic correctly
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", isRTL ? "نموذج_رواتب_أكاديمية_زويل.csv" : "zewail_academy_payroll_template.csv");
+    link.setAttribute("download", isRTL ? "نموذج_رواتب_خدمات_حسام_الورداني.csv" : "hossam_elwardany_hr_payroll_template.csv");
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
