@@ -1,0 +1,12 @@
+{
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "ai-studio-hossamhr-7819658f-1a04-41f7-8514-7277fe716d2a",
+      "rules": "firestore.rules"
+    }
+  ]
+}

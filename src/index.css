@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply antialiased text-[#002D62];
+    background-color: #FFFFFF;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(241, 245, 249, 0.8) 0px, transparent 50%), 
+      radial-gradient(at 100% 0%, rgba(224, 231, 255, 0.6) 0px, transparent 50%), 
+      radial-gradient(at 100% 100%, rgba(241, 245, 249, 0.8) 0px, transparent 50%), 
+      radial-gradient(at 0% 100%, rgba(238, 242, 255, 0.6) 0px, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* Smooth Theme Transitions */
+  body, .td-card, .td-btn-secondary, .td-btn-primary, .td-badge, .td-input, header, nav, select, input, table, th, td, div, span {
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Dark Theme System Configuration */
+  html.dark body {
+    @apply text-slate-100;
+    background-color: #030712;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(15, 23, 42, 0.98) 0px, transparent 50%), 
+      radial-gradient(at 100% 0%, rgba(30, 41, 59, 0.95) 0px, transparent 50%), 
+      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.98) 0px, transparent 50%), 
+      radial-gradient(at 0% 100%, rgba(30, 41, 59, 0.95) 0px, transparent 50%);
+  }
+
+  html.dark h1,
+  html.dark h2,
+  html.dark h3,
+  html.dark h4,
+  html.dark h5,
+  html.dark h6 {
+    @apply text-slate-50;
+  }
+
+  html.dark p,
+  html.dark span:not(.td-badge),
+  html.dark label,
+  html.dark td {
+    color: rgba(241, 245, 249, 0.82);
+  }
+
+  /* Force background changes for main structures */
+  html.dark header,
+  html.dark .bg-white,
+  html.dark .fixed.top-0.bottom-0.w-72 {
+    background-color: #0f172a !important;
+    border-color: rgba(56, 189, 248, 0.15) !important;
+  }
+
+  html.dark .bg-slate-50,
+  html.dark .bg-slate-100 {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+  }
+
+  html.dark .hover\:bg-slate-50:hover,
+  html.dark .hover\:bg-\[\#002D62\]\/5:hover {
+    background-color: rgba(56, 189, 248, 0.08) !important;
+  }
+
+  html.dark .text-\[\#002D62\] {
+    color: #f1f5f9 !important;
+  }
+
+  html.dark .text-\[\#002D62\]\/50,
+  html.dark .text-\[\#002D62\]\/60,
+  html.dark .text-\[\#002D62\]\/75,
+  html.dark .text-\[\#002D62\]\/80 {
+    color: rgba(241, 245, 249, 0.6) !important;
+  }
+
+  html.dark .border-b-2.border-\[\#002D62\]\/10,
+  html.dark .border-e-2.border-\[\#002D62\]\/12,
+  html.dark .border-2.border-\[\#002D62\]\/15,
+  html.dark .border-2.border-\[\#002D62\]\/20,
+  html.dark .border-t-2.border-\[\#002D62\]\/10 {
+    border-color: rgba(56, 189, 248, 0.15) !important;
+  }
+
+  html.dark select {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+  }
+
+  html.dark .td-card {
+    background-color: #0f172a !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    box-shadow: 6px 6px 0px 0px #38bdf8 !important;
+  }
+
+  html.dark .td-card:hover {
+    box-shadow: 10px 10px 0px 0px #38bdf8 !important;
+  }
+
+  html.dark .td-card:active {
+    box-shadow: 3px 3px 0px 0px #38bdf8 !important;
+  }
+
+  html.dark .td-btn-primary {
+    background-color: #38bdf8 !important;
+    border-color: #38bdf8 !important;
+    color: #0f172a !important;
+    box-shadow: 4px 4px 0px 0px #0284c7 !important;
+  }
+
+  html.dark .td-btn-primary:hover {
+    box-shadow: 6px 6px 0px 0px #0284c7 !important;
+  }
+
+  html.dark .td-btn-secondary {
+    background-color: #1e293b !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    color: #38bdf8 !important;
+    box-shadow: 4px 4px 0px 0px #0f172a !important;
+  }
+
+  html.dark .td-btn-secondary:hover {
+    box-shadow: 6px 6px 0px 0px #0f172a !important;
+  }
+
+  html.dark .td-input {
+    background-color: #1e293b !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+    color: #f1f5f9 !important;
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), 3px 3px 0px 0px rgba(56,189,248,0.1) !important;
+  }
+
+  html.dark .td-input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), 5px 5px 0px 0px #38bdf8 !important;
+  }
+
+  html.dark .td-badge {
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    background-color: rgba(56, 189, 248, 0.1) !important;
+    color: #38bdf8 !important;
+    box-shadow: 2px 2px 0px 0px #38bdf8 !important;
+  }
+
+  html.dark .td-badge span, html.dark .td-badge {
+    color: #38bdf8 !important;
+  }
+
+  html.dark table th {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+  }
+
+  html.dark table tr:hover {
+    background-color: rgba(56, 189, 248, 0.05) !important;
+  }
+
+  html.dark table tr:nth-child(even) {
+    background-color: #0f172a !important;
+  }
+}
+
+@layer components {
+  /* 3D Tactile Card */
+  .td-card {
+    @apply bg-white rounded-3xl border-2 border-[#002D62]/15 shadow-[6px_6px_0px_0px_#002D62] transition-all duration-200 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0px_0px_#002D62] active:translate-y-0.5 active:translate-x-0.5 active:shadow-[3px_3px_0px_0px_#002D62];
+  }
+
+  /* 3D Interactive Button - Primary Action */
+  .td-btn-primary {
+    @apply select-none bg-[#002D62] text-white border-2 border-[#002D62] px-6 py-3 font-extrabold rounded-2xl shadow-[4px_4px_0px_0px_#1e3a8a] transition-all duration-150 hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-[6px_6px_0px_0px_#1e3a8a] active:translate-y-0.5 active:translate-x-0.5 active:shadow-[1px_1px_0px_0px_#1e3a8a] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* 3D Secondary Button */
+  .td-btn-secondary {
+    @apply select-none bg-white text-[#002D62] border-2 border-[#002D62]/90 px-6 py-3 font-extrabold rounded-2xl shadow-[4px_4px_0px_0px_#002D62] transition-all duration-150 hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-[6px_6px_0px_0px_#002D62] active:translate-y-0.5 active:translate-x-0.5 active:shadow-[1px_1px_0px_0px_#002D62];
+  }
+
+  /* 3D Tactile Input */
+  .td-input {
+    @apply bg-white border-2 border-[#002D62]/20 text-[#002D62] font-semibold px-4 py-3.5 rounded-2xl shadow-[inset_2px_2px_4px_rgba(0,45,98,0.06),_3px_3px_0px_0px_rgba(0,45,98,0.08)] outline-none transition-all duration-150 focus:border-[#002D62] focus:shadow-[inset_2px_2px_4px_rgba(0,45,98,0.06),_5px_5px_0px_0px_#002D62];
+  }
+
+  /* 3D Badge */
+  .td-badge {
+    @apply px-3 py-1 text-xs font-extrabold uppercase tracking-wider rounded-xl border-2 border-[#002D62]/30 bg-[#002D62]/5 text-[#002D62] shadow-[2px_2px_0px_0px_#002D62];
+  }
+
+  /* Retro styled elements for 3D system */
+  .td-header {
+    @apply font-serif font-black italic tracking-tight;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-color: rgba(0, 45, 98, 0.4) rgba(0, 45, 98, 0.05);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 45, 98, 0.05);
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 45, 98, 0.4);
+    border-radius: 9999px;
+  }
+
+  .h-75 {
+    height: 18.75rem;
+  }
+
+  .min-h-75 {
+    min-height: 18.75rem;
+  }
+
+  .min-h-150 {
+    min-height: 37.5rem;
+  }
+
+  .rounded-4xl {
+    border-radius: 2rem;
+  }
+
+  .rounded-5xl {
+    border-radius: 2.5rem;
+  }
+
+  .rounded-6xl {
+    border-radius: 3rem;
+  }
+}

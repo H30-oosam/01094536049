@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title>Human Resources Services</title>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="32" fill="#0f172a" />
+  <circle cx="80" cy="44" r="24" fill="#f8fafc" />
+  <path d="M58 92c-8 0-14 6-14 14v14h30v-14c0-8-6-14-14-14Z" fill="#f8fafc" />
+  <circle cx="80" cy="79" r="11" fill="#1d4ed8" />
+  <circle cx="34" cy="44" r="10" fill="#0ea5e9" />
+  <circle cx="126" cy="44" r="10" fill="#0ea5e9" />
+  <circle cx="34" cy="110" r="8" fill="#38bdf8" />
+  <circle cx="126" cy="110" r="8" fill="#38bdf8" />
+  <path d="M50 48l24 18" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+  <path d="M110 48l-24 18" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+  <path d="M44 104l18-16" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+  <path d="M116 104l-18-16" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+</svg>

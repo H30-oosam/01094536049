@@ -1,0 +1,229 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["super-admin", "admin", "hr", "manager", "employee"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee profile and professional details.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "departmentId": { "type": "string" },
+        "position": { "type": "string" },
+        "hireDate": { "type": "string", "format": "date" },
+        "salary": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "on_leave", "terminated"] },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["firstName", "lastName", "email", "departmentId", "position", "hireDate", "status"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Organizational departments.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "managerId": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance records.",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "checkIn": { "type": "string", "format": "date-time" },
+        "checkOut": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["present", "absent", "late", "half_day"] }
+      },
+      "required": ["employeeId", "date", "status"]
+    },
+    "LeaveRequest": {
+      "title": "Leave Request",
+      "description": "Employee leave requests.",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "type": { "type": "string", "enum": ["annual", "sick", "unpaid", "maternity", "paternity"] },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "approvedBy": { "type": "string" }
+      },
+      "required": ["employeeId", "type", "startDate", "endDate", "status"]
+    },
+    "Payroll": {
+      "title": "Payroll",
+      "description": "Monthly payroll records.",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "month": { "type": "string" },
+        "year": { "type": "number" },
+        "basicSalary": { "type": "number" },
+        "allowances": { "type": "number" },
+        "deductions": { "type": "number" },
+        "netSalary": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "paid"] }
+      },
+      "required": ["employeeId", "month", "year", "basicSalary", "netSalary", "status"]
+    },
+    "JobPost": {
+      "title": "Job Post",
+      "description": "Recruitment job openings.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "departmentId": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed", "draft"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "departmentId", "status"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Job applicants.",
+      "type": "object",
+      "properties": {
+        "jobPostId": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "resumeURL": { "type": "string" },
+        "status": { "type": "string", "enum": ["applied", "screening", "interview", "offered", "hired", "rejected"] },
+        "appliedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobPostId", "firstName", "lastName", "email", "status"]
+    },
+    "PerformanceReview": {
+      "title": "Performance Review",
+      "description": "Employee performance evaluations.",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "reviewerId": { "type": "string" },
+        "period": { "type": "string" },
+        "rating": { "type": "number" },
+        "comments": { "type": "string" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["employeeId", "reviewerId", "rating", "date"]
+    },
+    "TrainingCourse": {
+      "title": "Training Course",
+      "description": "Available training for employees.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "instructor": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "participants": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "startDate", "endDate"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notifications for users.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "success", "error"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "read", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Company projects and budgets.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["planning", "active", "completed", "on_hold"] },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "budget": { "type": "number" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "startDate", "budget"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Tasks assigned to teams or individuals.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "done"] },
+        "dueDate": { "type": "string", "format": "date" },
+        "assignedTo": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "priority", "status", "dueDate"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "User operations system auditing logs.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "type": { "type": "string", "enum": ["CREATE", "UPDATE", "DELETE", "LOGIN", "UPLOAD"] },
+        "collection": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "action", "details", "type", "collection", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users": { "schema": "User", "description": "Users and their roles." },
+    "employees": { "schema": "Employee", "description": "Employee records." },
+    "departments": { "schema": "Department", "description": "Department definitions." },
+    "attendance": { "schema": "Attendance", "description": "Daily attendance logs." },
+    "leaveRequests": { "schema": "LeaveRequest", "description": "Leave management." },
+    "payroll": { "schema": "Payroll", "description": "Payroll history." },
+    "jobPosts": { "schema": "JobPost", "description": "Recruitment job posts." },
+    "candidates": { "schema": "Candidate", "description": "Job candidates." },
+    "performanceReviews": { "schema": "PerformanceReview", "description": "Performance history." },
+    "trainingCourses": { "schema": "TrainingCourse", "description": "Learning courses." },
+    "notifications": { "schema": "Notification", "description": "User notifications." },
+    "projects": { "schema": "Project", "description": "Tracks company projects and performance." },
+    "tasks": { "schema": "Task", "description": "Action items and tasks." },
+    "activity_logs": { "schema": "ActivityLog", "description": "Admin actions auditing trail." }
+  }
+}
